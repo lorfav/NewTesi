@@ -42,7 +42,7 @@ simulator.set_param(**params_simulator)
 
 simulator.setup()
 
-mpc.x0 = x0
+mpc.mpc.x0 = x0
 
 estimator.x0 = x0
 

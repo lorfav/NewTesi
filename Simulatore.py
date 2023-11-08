@@ -11,7 +11,7 @@ from Controllore import *
 rov = MyROVModel()
 
 def line(t):
-    x = 5.33*0.01*t
+    x = 5.33*10**(-3)*t**2-3.55*10**(-5)*t**3
     y = 0.0
     z = 5.0
     return x, y, z
@@ -95,7 +95,7 @@ setpoint1 = [[],[],[]]
 u0 = np.zeros((8,1))
 j = 0
 
-n_sim = 200
+n_sim = 300
 
 function_line = True
 firt_itr = True
@@ -105,10 +105,7 @@ data = []
 
 for i in range(n_sim):
 
-    for i in range(30):
-        print("\t\t\t\t\t\t\t\t\t\t\t\t{}/{}".format(j,n_sim))
-    
-    j += 1
+    print("\t\t\t\t\t\t\t\t\t\t\t\t{}/{}".format(i,n_sim))    
 
     u0 = mpc.mpc.make_step(x0)
 
@@ -118,7 +115,7 @@ for i in range(n_sim):
 
     data.append(x0)
 
-    mpc.x_setp, mpc.y_setp, mpc.z_setp = line(j)
+    mpc.x_setp, mpc.y_setp, mpc.z_setp = line(i*0.1)
 
 
     lines = (sim_graphics.result_lines['_x', 'x']+

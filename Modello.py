@@ -191,6 +191,7 @@ class MyROVModel():
         
         
         dynamics = vertcat(f_1,f_2,f_3,f_4,f_5,f_6)
+
         for i in range(3):
             dynamics[i] -= d[i]
         

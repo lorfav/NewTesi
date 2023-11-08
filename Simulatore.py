@@ -10,13 +10,13 @@ from Controllore import *
 
 rov = MyROVModel()
 
-def line(t):
-    x = 5.33*10**(-3)*t**2-3.55*10**(-5)*t**3
+def line(t):# [ 0.00000000e+00  0.00000000e+00  5.33333333e-03 -3.55555556e-05] 0.25
+    x = 2/3*0.01*t
     y = 0.0
-    z = 5.0
-    return x, y, z
+    z = 0.01*t
+    return x,y,z
 
-x0 = np.array([ 1 , 1 , 1 , 1 , 1 , 1 , 0 , 0 , 0 , 0 , 0 , 0 ])
+x0 = np.array([ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ])
 sp  =         [ 0 , 0 , 0 , 0 , 0 , 0 ]
 d0 = [0, 0, 0]
 
@@ -115,8 +115,17 @@ for i in range(n_sim):
 
     data.append(x0)
 
-    mpc.x_setp, mpc.y_setp, mpc.z_setp = line(i*0.1)
+    if (mpc.x_setp >= 5):
+        function_line = False
+    if (function_line):
+        linea = line(i)
+        tz = i
+    else:
+        linea = 5, 0, mpc.z_setp
 
+    print("Setp = {}".format(mpc.x_setp))
+
+    mpc.x_setp, mpc.y_setp, mpc.z_setp = linea
 
     lines = (sim_graphics.result_lines['_x', 'x']+
         sim_graphics.result_lines['_x', 'y']+

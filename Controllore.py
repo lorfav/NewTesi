@@ -1,5 +1,6 @@
 import do_mpc
 from casadi import *
+import numpy as np
 
 class MyController():
 
@@ -51,6 +52,9 @@ class MyController():
             u_6 = 0.1,
             u_7 = 0.1,
             u_8 = 0.1,
+
+            
+            
         )
     
         self.mpc.set_objective(mterm = mterm, lterm = lterm)
@@ -83,7 +87,7 @@ class MyController():
     
     def tvp_fun(self, t_now):
         tvp_template = self.mpc.get_tvp_template()
-        for k in range(21):
+        for k in range(200):
             tvp_template['_tvp', k, 'x_sp'] =  self.x_setp
             tvp_template['_tvp', k, 'y_sp'] =  self.y_setp
             tvp_template['_tvp', k, 'z_sp'] =  self.z_setp

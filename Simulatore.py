@@ -5,31 +5,62 @@ import pandas
 from casadi import *
 import do_mpc
 
-from Modello import *
-from Controllore import *
+from ModelloAUV import *
+from ModelloUSV import *
+from ControlloreAUV import *
+from ControlloreUSV import *
 
-rov = MyROVModel()
+auv = MyAUVModel()
+usv = MyUSVModel()
+
+x0 = -10
+y0 = -10
+z0 = -10
 
 def line(t):# [ 0.00000000e+00  0.00000000e+00  5.33333333e-03 -3.55555556e-05] 0.25
-    x = 2/3*0.01*t
-    y = 0.0
-    z = 0.01*t
+    x = x0 + 2/3*0.01*t
+    y = y0 - 0.01*t
+    z = z0 + 0.01*t
     return x,y,z
 
-x0 = np.array([ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ])
-sp  =         [ 0 , 0 , 0 , 0 , 0 , 0 ]
-d0 = [0, 0, 0]
+x0_1 = np.array([x0,y0,z0,      #position
+                 0,0,0,        #orientation
+                 0,0,0,        #speed
+                 0,0,0])       #angular speed
 
-mpc = MyController(rov, sp, d0)
+x0_2 = np.array([0,0,0,        # x, y, yaw
+                 0,0,0])       # speeds
 
-estimator = do_mpc.estimator.StateFeedback(rov.model)
+sp = [0,0,-10,
+      0,0,0]
 
-simulator = do_mpc.simulator.Simulator(rov.model)
-simulator.set_param(mxstep = 1000)
+V = [0,0]
 
-tvp_template = simulator.get_tvp_template()
+mpc1 = AUVController(auv, sp)
+mpc2 = USVController(usv, x0_1, V)
 
-simulator.set_tvp_fun(tvp_template)
+estimator1 = do_mpc.estimator.StateFeedback(auv.model)
+estimator2 = do_mpc.estimator.StateFeedback(usv.model)
+
+simulator1 = do_mpc.simulator.Simulator(auv.model)
+simulator2 = do_mpc.simulator.Simulator(usv.model)
+
+p_num = simulator2.get_p_template()
+p_num['Vx'] = V[0]
+p_num['Vy'] = V[1]
+
+def p_fun(t_now):
+    return p_num
+
+simulator2.set_p_fun(p_fun)
+#simulator1.set_param(mxstep = 1000)
+
+tvp_template1 = simulator1.get_tvp_template()
+tvp_template2 = simulator2.get_tvp_template()
+
+
+simulator1.set_tvp_fun(tvp_template1)
+simulator2.set_tvp_fun(tvp_template2)
 
 params_simulator = {
     'integration_tool': 'idas',
@@ -38,54 +69,67 @@ params_simulator = {
     't_step': 0.1,
 }
 
-simulator.set_param(**params_simulator)
+simulator1.set_param(**params_simulator)
+simulator2.set_param(**params_simulator)
 
-simulator.setup()
+mpc1.mpc.x0 = x0_1
+mpc2.mpc.x0 = x0_2
 
-mpc.mpc.x0 = x0
+estimator1.x0 = x0_1
+estimator2.x0 = x0_2
 
-estimator.x0 = x0
+simulator1.x0 = x0_1
+simulator2.x0 = x0_2
 
-simulator.x0 = x0
 
-mpc.mpc.set_initial_guess()
 
-mpc_graphics = do_mpc.graphics.Graphics(mpc.mpc.data)
-sim_graphics = do_mpc.graphics.Graphics(simulator.data)
+#simulator1.set_p_fun(p_fun)
 
-fig, ax = plt.subplots(3, sharex=True)
-fig.align_ylabels
+simulator1.setup()
+simulator2.setup()
 
-for g in [sim_graphics, mpc_graphics]:
+mpc1.mpc.set_initial_guess()
+mpc2.mpc.set_initial_guess()
+
+mpc_graphics1 = do_mpc.graphics.Graphics(mpc1.mpc.data)
+sim_graphics1 = do_mpc.graphics.Graphics(simulator1.data)
+
+mpc_graphics2 = do_mpc.graphics.Graphics(mpc2.mpc.data)
+sim_graphics2 = do_mpc.graphics.Graphics(simulator2.data)
+
+fig1, ax1 = plt.subplots(3, sharex=True)
+fig1.align_ylabels
+
+for g in [sim_graphics1, mpc_graphics1]:
     # Plot the angle positions (phi_1, phi_2, phi_2) on the first axis:
-    g.add_line(var_type='_x', var_name='x', axis=ax[0])
-    g.add_line(var_type='_x', var_name='y', axis=ax[0])
-    g.add_line(var_type='_x', var_name='z', axis=ax[0])
-    g.add_line(var_type='_x', var_name='u', axis=ax[0])
-    g.add_line(var_type='_x', var_name='v', axis=ax[0])
-    g.add_line(var_type='_x', var_name='w', axis=ax[0])
+    g.add_line(var_type='_x', var_name='x', axis=ax1[0])
+    g.add_line(var_type='_x', var_name='y', axis=ax1[0])
+    g.add_line(var_type='_x', var_name='z', axis=ax1[0])
+    g.add_line(var_type='_x', var_name='u', axis=ax1[0])
+    g.add_line(var_type='_x', var_name='v', axis=ax1[0])
+    g.add_line(var_type='_x', var_name='w', axis=ax1[0])
     
-    g.add_line(var_type='_x', var_name='phi', axis=ax[2])
-    g.add_line(var_type='_x', var_name='theta', axis=ax[2])
-    g.add_line(var_type='_x', var_name='psi', axis=ax[2])
-    g.add_line(var_type='_x', var_name='p', axis=ax[2])
-    g.add_line(var_type='_x', var_name='q', axis=ax[2])
-    g.add_line(var_type='_x', var_name='r', axis=ax[2])
+    g.add_line(var_type='_x', var_name='phi', axis=ax1[2])
+    g.add_line(var_type='_x', var_name='theta', axis=ax1[2])
+    g.add_line(var_type='_x', var_name='psi', axis=ax1[2])
+    g.add_line(var_type='_x', var_name='p', axis=ax1[2])
+    g.add_line(var_type='_x', var_name='q', axis=ax1[2])
+    g.add_line(var_type='_x', var_name='r', axis=ax1[2])
 
-    g.add_line(var_type='_u', var_name='u_1', axis=ax[1])
-    g.add_line(var_type='_u', var_name='u_2', axis=ax[1])
-    g.add_line(var_type='_u', var_name='u_3', axis=ax[1])
-    g.add_line(var_type='_u', var_name='u_4', axis=ax[1])
-    g.add_line(var_type='_u', var_name='u_5', axis=ax[1])
-    g.add_line(var_type='_u', var_name='u_6', axis=ax[1])
-    g.add_line(var_type='_u', var_name='u_7', axis=ax[1])
-    g.add_line(var_type='_u', var_name='u_8', axis=ax[1])
+    g.add_line(var_type='_u', var_name='u_1', axis=ax1[1])
+    g.add_line(var_type='_u', var_name='u_2', axis=ax1[1])
+    g.add_line(var_type='_u', var_name='u_3', axis=ax1[1])
+    g.add_line(var_type='_u', var_name='u_4', axis=ax1[1])
+    g.add_line(var_type='_u', var_name='u_5', axis=ax1[1])
+    g.add_line(var_type='_u', var_name='u_6', axis=ax1[1])
+    g.add_line(var_type='_u', var_name='u_7', axis=ax1[1])
+    g.add_line(var_type='_u', var_name='u_8', axis=ax1[1])
 
     # Plot the set motor positions (phi_m_1_set, phi_m_2_set) on the second axis:
 
-ax[0].set_ylabel('Position [m], velocity [m/s]')
-ax[1].set_ylabel('Input [N]')
-ax[2].set_ylabel('Angle [rad]')
+ax1[0].set_ylabel('Position [m], velocity [m/s]')
+ax1[1].set_ylabel('Input [N]')
+ax1[2].set_ylabel('Angle [rad]')
 
 plot1 = []
 plot2 = []
@@ -107,57 +151,57 @@ for i in range(n_sim):
 
     print("\t\t\t\t\t\t\t\t\t\t\t\t{}/{}".format(i,n_sim))    
 
-    u0 = mpc.mpc.make_step(x0)
+    u0 = mpc1.mpc.make_step(x0_1)
 
-    y_next = simulator.make_step(u0)
+    y_next = simulator1.make_step(u0)
 
-    x0 = estimator.make_step(y_next)
+    x0_1 = estimator1.make_step(y_next)
 
-    data.append(x0)
+    data.append(x0_1)
 
-    if (mpc.x_setp >= 5):
+    if (mpc1.x_setp >= 5):
         function_line = False
     if (function_line):
         linea = line(i)
         tz = i
     else:
-        linea = 5, 0, mpc.z_setp
+        linea = 5, 0, mpc1.z_setp
 
-    print("Setp = {}".format(mpc.x_setp))
+    print("Setp = {}".format(mpc1.x_setp))
 
-    mpc.x_setp, mpc.y_setp, mpc.z_setp = linea
+    mpc1.x_setp, mpc1.y_setp, mpc1.z_setp = linea
 
-    lines = (sim_graphics.result_lines['_x', 'x']+
-        sim_graphics.result_lines['_x', 'y']+
-        sim_graphics.result_lines['_x', 'z']+
-        sim_graphics.result_lines['_x', 'u']+
-        sim_graphics.result_lines['_x', 'v']+
-        sim_graphics.result_lines['_x', 'w']
+    lines = (sim_graphics1.result_lines['_x', 'x']+
+        sim_graphics1.result_lines['_x', 'y']+
+        sim_graphics1.result_lines['_x', 'z']+
+        sim_graphics1.result_lines['_x', 'u']+
+        sim_graphics1.result_lines['_x', 'v']+
+        sim_graphics1.result_lines['_x', 'w']
         )
-ax[0].legend(lines,'xyzuvw',title='position')
+ax1[0].legend(lines,'xyzuvw',title='position')
 
-lines = (sim_graphics.result_lines['_u', 'u_1']+
-        sim_graphics.result_lines['_u', 'u_2']+
-        sim_graphics.result_lines['_u', 'u_3']+
-        sim_graphics.result_lines['_u', 'u_4']+
-        sim_graphics.result_lines['_u', 'u_5']+
-        sim_graphics.result_lines['_u', 'u_6']+
-        sim_graphics.result_lines['_u', 'u_7']+
-        sim_graphics.result_lines['_u', 'u_8']
+lines = (sim_graphics1.result_lines['_u', 'u_1']+
+        sim_graphics1.result_lines['_u', 'u_2']+
+        sim_graphics1.result_lines['_u', 'u_3']+
+        sim_graphics1.result_lines['_u', 'u_4']+
+        sim_graphics1.result_lines['_u', 'u_5']+
+        sim_graphics1.result_lines['_u', 'u_6']+
+        sim_graphics1.result_lines['_u', 'u_7']+
+        sim_graphics1.result_lines['_u', 'u_8']
         )
 
-ax[1].legend(lines,'12345678',title='input')
+ax1[1].legend(lines,'12345678',title='input')
 
-lines = (sim_graphics.result_lines['_x', 'phi']+
-        sim_graphics.result_lines['_x', 'theta']+
-        sim_graphics.result_lines['_x', 'psi']+
-        sim_graphics.result_lines['_x', 'p']+
-        sim_graphics.result_lines['_x', 'q']+
-        sim_graphics.result_lines['_x', 'r'])
-ax[2].legend(lines,'φθψpqr',title='euler angles')
-sim_graphics.plot_results()
+lines = (sim_graphics1.result_lines['_x', 'phi']+
+        sim_graphics1.result_lines['_x', 'theta']+
+        sim_graphics1.result_lines['_x', 'psi']+
+        sim_graphics1.result_lines['_x', 'p']+
+        sim_graphics1.result_lines['_x', 'q']+
+        sim_graphics1.result_lines['_x', 'r'])
+ax1[2].legend(lines,'φθψpqr',title='euler angles')
+sim_graphics1.plot_results()
 
-sim_graphics.reset_axes()
+sim_graphics1.reset_axes()
 
 plt.show()
 

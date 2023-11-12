@@ -2,17 +2,15 @@ import do_mpc
 from casadi import *
 import numpy as np
 
-class MyController():
+class AUVController():
 
-    def __init__(self, rovModel, setPoints, D):
+    def __init__(self, rovModel, setPoints):
         self.x_setp = setPoints[0]
         self.y_setp = setPoints[1]
         self.z_setp = setPoints[2]
         self.phi_setp = setPoints[3]
         self.theta_setp = setPoints[4]
         self.psi_setp = setPoints[5]
-
-        self.d = D
 
         self.mpc = do_mpc.controller.MPC(rovModel.model)
 
@@ -87,7 +85,7 @@ class MyController():
     
     def tvp_fun(self, t_now):
         tvp_template = self.mpc.get_tvp_template()
-        for k in range(200):
+        for k in range(21):
             tvp_template['_tvp', k, 'x_sp'] =  self.x_setp
             tvp_template['_tvp', k, 'y_sp'] =  self.y_setp
             tvp_template['_tvp', k, 'z_sp'] =  self.z_setp

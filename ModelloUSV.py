@@ -90,8 +90,10 @@ class MyUSVModel():
 
 
         f_1 = r*v*Iy/Ix - u*Dx/Ix + tu
+        #f_1 = v*Iy/Ix - u*Dx/Ix + tu
         f_2 = -u*Ix/Iy - v*Dy/Iy + tv
         f_3 = -r*Dz/Iz + v*u*(Iy-Ix)/Iz + tr
+        #f_3 = -r*Dz/Iz + u*(Iy-Ix)/Iz + tr
         
         
         self.model.set_alg('u_dot',f_1)

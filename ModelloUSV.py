@@ -79,9 +79,9 @@ class MyUSVModel():
         self.model.set_rhs('y', u*sin(psi) + v*cos(psi) + Vy)
         self.model.set_rhs('psi', r)
 
-        #self.model.set_rhs('u', r*v*Iy + tu)
-        #self.model.set_rhs('v', -u*Ix/Iy + Dy/Iy + tv)
-        #self.model.set_rhs('r', Dz/Iz + tr)
+        self.model.set_rhs('u', r*v*Iy/Ix - u*Dx/Ix + tu)
+        self.model.set_rhs('v', -u*Ix/Iy - v*Dy/Iy + tv)
+        self.model.set_rhs('r', -r*Dz/Iz + v*u*(Iy-Ix)/Iz + tr)
 
         self.model.set_rhs('u', u_dot)
         self.model.set_rhs('v', v_dot)

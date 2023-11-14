@@ -79,9 +79,9 @@ class MyUSVModel():
         self.model.set_rhs('y', u*sin(psi) + v*cos(psi) + Vy)
         self.model.set_rhs('psi', r)
 
-        self.model.set_rhs('u', r*v*Iy/Ix - u*Dx/Ix + tu)
-        self.model.set_rhs('v', -u*Ix/Iy - v*Dy/Iy + tv)
-        self.model.set_rhs('r', -r*Dz/Iz + v*u*(Iy-Ix)/Iz + tr)
+        #self.model.set_rhs('u', r*v*Iy/Ix - u*Dx/Ix + tu)
+        #self.model.set_rhs('v', -u*Ix/Iy - v*Dy/Iy + tv)
+        #self.model.set_rhs('r', -r*Dz/Iz + v*u*(Iy-Ix)/Iz + tr)
 
         self.model.set_rhs('u', u_dot)
         self.model.set_rhs('v', v_dot)
@@ -89,10 +89,14 @@ class MyUSVModel():
 
 
 
-        dynamics = vertcat(tu, tv, tr)
-        self.model.set_alg('u_dot',tu)
-        self.model.set_alg('v_dot',tv)
-        self.model.set_alg('r_dot',tr)
+        f_1 = r*v*Iy/Ix - u*Dx/Ix + tu
+        f_2 = -u*Ix/Iy - v*Dy/Iy + tv
+        f_3 = -r*Dz/Iz + v*u*(Iy-Ix)/Iz + tr
+        
+        
+        self.model.set_alg('u_dot',f_1)
+        self.model.set_alg('v_dot',f_2)
+        self.model.set_alg('r_dot',f_3)
 
         self.model.setup()
 

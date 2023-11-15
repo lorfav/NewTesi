@@ -7,7 +7,11 @@ class USVController():
     def __init__(self, model, setPoints, V):
         self.x_setp = setPoints[0]
         self.y_setp = setPoints[1]
+        self.psi_setp = setPoints[2]
         self.V = V
+
+        self.x_2 = self.x_setp
+        self.y_2 = 0
 
         self.mpc = do_mpc.controller.MPC(model.model)
 
@@ -25,15 +29,15 @@ class USVController():
         input = model.model.u
         tvp = model.model.tvp
 
-        mterm = (state['x']**2 + state['y']**2 + state['psi']**2)
+        mterm = (model.model.x['x']**2 + state['y']**2)
         
-        lterm = ((tvp['x_sp'] - state['x'])**2 + (tvp['y_sp'] - state['y'])**2 +
-                 (tvp['psi_sp'] - state['psi'])**2
-        )
+        lterm = ((tvp['x_sp'] - state['x'])**2 + (tvp['y_sp'] - state['y'])**2)
 
-        Vx_array = np.array([10, 10*1.3, 10*0.7])
-        Vy_array = np.array([10, 10*1.3, 10*0.7])
-        self.mpc.set_uncertainty_values(Vx = Vx_array, Vy = Vy_array)
+        mterm = ((tvp['x_sp'] - state['x'])**2 + (tvp['y_sp'] - state['y'])**2)
+
+        Vx_array = np.array([0,0,0])
+        Vy_array = np.array([0,0,0])
+        #self.mpc.set_uncertainty_values(Vx = Vx_array, Vy = Vy_array)
 
 
 
@@ -65,6 +69,16 @@ class USVController():
         for k in range(21):
             tvp_template['_tvp', k, 'x_sp'] =  self.x_setp
             tvp_template['_tvp', k, 'y_sp'] =  self.y_setp
+            tvp_template['_tvp', k, 'psi_sp'] = self.psi_setp
+
+            tvp_template['_tvp',k,'x_2'] =  self.x_2
+            tvp_template['_tvp',k,'y_2'] =  self.y_2
+
+            self.x_setp = self.x_2
+            self.y_setp = self.y_2
+        print("set x = {}".format(self.x_setp))
+        print(self.y_setp)
+        #print(self.state['x'])
 
         return tvp_template
     

@@ -90,7 +90,7 @@ class AUVController():
             tvp_template['_tvp', k, 'y_sp'] =  self.y_setp
             tvp_template['_tvp', k, 'z_sp'] =  self.z_setp
             tvp_template['_tvp', k, 'phi_sp'] = self.phi_setp
-            tvp_template['_tvp', k, 'theta_sp'] = self.theta_setp
+            tvp_template['_tvp', k, 'theta_sp'] = self.phi_setp
             tvp_template['_tvp', k, 'psi_sp'] = self.psi_setp
 
         return tvp_template

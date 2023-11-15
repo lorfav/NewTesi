@@ -13,8 +13,8 @@ from ControlloreUSV import *
 auv = MyAUVModel()
 usv = MyUSVModel()
 
-x0 = 10
-y0 = 10
+x0 = 0
+y0 = 0
 z0 = 10
 
 def line(t):# [ 0.00000000e+00  0.00000000e+00  5.33333333e-03 -3.55555556e-05] 0.25
@@ -24,20 +24,21 @@ def line(t):# [ 0.00000000e+00  0.00000000e+00  5.33333333e-03 -3.55555556e-05] 
     return x,y,z
 
 x0_1 = np.array([x0,y0,z0,      #position
-                 0,0,0,        #orientation
-                 0,0,0,        #speed
-                 0,0,0])       #angular speed
+        0,0,0,        #orientation
+        0,0,0,        #speed
+        0,0,0])       #angular speed
 
 x0_2 = np.array([0,0,0,        # x, y, yaw
-                 0,0,0])       # speeds
+        0,0,0])       # speeds
 
-sp = [0,0,10,
+sp_1 = [0,0,10,
       0,0,0]
+sp_2 = [x0, y0, 0]
 
 V = [0,0]
 
-mpc1 = AUVController(auv, sp)
-mpc2 = USVController(usv, x0_1, V)
+mpc1 = AUVController(auv, sp_1)
+mpc2 = USVController(usv, sp_2, V)
 
 estimator1 = do_mpc.estimator.StateFeedback(auv.model)
 estimator2 = do_mpc.estimator.StateFeedback(usv.model)
@@ -45,14 +46,14 @@ estimator2 = do_mpc.estimator.StateFeedback(usv.model)
 simulator1 = do_mpc.simulator.Simulator(auv.model)
 simulator2 = do_mpc.simulator.Simulator(usv.model)
 
-p_num = simulator2.get_p_template()
-p_num['Vx'] = V[0]
-p_num['Vy'] = V[1]
+#p_num = simulator2.get_p_template()
+#p_num['Vx'] = V[0]
+#p_num['Vy'] = V[1]
 
 def p_fun(t_now):
     return p_num
 
-simulator2.set_p_fun(p_fun)
+#simulator2.set_p_fun(p_fun)
 #simulator1.set_param(mxstep = 1000)
 
 tvp_template1 = simulator1.get_tvp_template()
@@ -163,7 +164,7 @@ u0_1 = np.zeros((8,1))
 u0_2 = np.zeros((2,1))
 j = 0
 
-n_sim = 100
+n_sim = 400
 
 function_line = True
 firt_itr = True
@@ -175,9 +176,14 @@ rot2_count = 0
 phi_0 = arctan(x0_1[2] / (x0_2[0] - x0_1[0]))
 theta_0 = arctan(x0_1[2] / (x0_2[1] - x0_1[1]))
 
+#y_next_2 = [0]
+
 for i in range(n_sim):
 
     print("\t\t\t\t\t\t\t\t\t\t\t\t{}/{}".format(i,n_sim))    
+
+    #print("Prima: u0_2 = {} y_next_2 = {}, x0_2 = {}".format(u0_2[0], y_next_2[0], x0_2[0]))
+
 
     u0_1 = mpc1.mpc.make_step(x0_1)
     u0_2 = mpc2.mpc.make_step(x0_2)
@@ -187,6 +193,8 @@ for i in range(n_sim):
 
     x0_1 = estimator1.make_step(y_next_1)
     x0_2 = estimator2.make_step(y_next_2)
+    
+    #print("Dopo: u0_2 = {} y_next_2 = {}, x0_2 = {}".format(u0_2[0], y_next_2[0], x0_2[0]))
 
     if (mpc1.x_setp >= 5):
         function_line = False
@@ -195,19 +203,27 @@ for i in range(n_sim):
         tz = i
     else:
         linea = 5, 0, mpc1.z_setp
+    #mpc1.x_setp, mpc1.y_setp, mpc1.z_setp = linea
 
 
-    phi_0 = arctan(x0_1[2] / (x0_2[0] - x0_1[0]))
-    theta_0 = arctan(x0_1[2] / (x0_2[1] - x0_1[1]))
+    #if (x0_1[0] >= 5):
+    #    mpc1.x_setp = -1
 
-    #phi_0 = arctan(x0_1[2] / (x0_1[0]))
-    #theta_0 = arctan(x0_1[2] / (x0_1[1]))
 
-    mpc1.x_setp, mpc1.y_setp, mpc1.z_setp = linea
+    phi_0 = arctan( (x0_2[0] - x0_1[0])/ x0_1[2])
+    theta_0 = arctan((x0_2[1] - x0_1[1]) / x0_1[2])
+
+    phi_0 = arctan(x0_1[2] / (x0_1[0]))
+    theta_0 = arctan(x0_1[2] / (x0_1[1]))
+
+    
     mpc1.phi_setp = phi_0
     mpc1.theta_setp = theta_0
-    mpc2.x_setp = x0_1[0]
-    mpc2.y_setp = x0_1[1]
+    mpc2.x_2 = x0_1[0]
+    mpc2.y_2 = x0_1[1]
+
+
+
 
 lines1 = (sim_graphics1.result_lines['_x', 'x']+
         sim_graphics1.result_lines['_x', 'y']+

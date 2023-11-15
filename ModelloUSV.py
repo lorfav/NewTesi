@@ -17,7 +17,7 @@ class MyUSVModel():
         M = m + mb + mp     #total weight
 
         ang = 0.53
-        d = 0.58
+        d = 0.285
 
         Ix = 0.6
         Iy = 0.7
@@ -57,9 +57,10 @@ class MyUSVModel():
         u2 = self.model.set_variable('_u', 'u2')
 
         #current in inertial frame
-        Vx = self.model.set_variable('_p','Vx')
-        Vy = self.model.set_variable('_p','Vy')
-
+        #Vx = self.model.set_variable('_p','Vx')
+        #Vy = self.model.set_variable('_p','Vy')
+        Vx = 0
+        Vy = 0
 
 
         #Set point
@@ -67,21 +68,26 @@ class MyUSVModel():
         y_sp = self.model.set_variable('_tvp', 'y_sp')
         psi_sp = self.model.set_variable('_tvp', 'psi_sp')
 
+        x_2 = self.model.set_variable('_tvp', 'x_2')
+        y_2 = self.model.set_variable('_tvp', 'y_2')
+        
+
         #dynamics
 
 
-        tu = (u1 + u2)*cos(ang)**2
+        tu = (u1 + u2)*sin(ang)**2
         tv = (u2 - u1)*sin(ang)*cos(ang)
-        tr = (u2 - u1)*d*sin(ang)
+        tr = (u2 - u1)*d*cos(ang)
+
+        tu = (u1 + u2)
+        tv = 0
+        tr = (u2 - u1)*d
 
 
         self.model.set_rhs('x', u*cos(psi) - v*sin(psi) + Vx)
         self.model.set_rhs('y', u*sin(psi) + v*cos(psi) + Vy)
         self.model.set_rhs('psi', r)
 
-        #self.model.set_rhs('u', r*v*Iy/Ix - u*Dx/Ix + tu)
-        #self.model.set_rhs('v', -u*Ix/Iy - v*Dy/Iy + tv)
-        #self.model.set_rhs('r', -r*Dz/Iz + v*u*(Iy-Ix)/Iz + tr)
 
         self.model.set_rhs('u', u_dot)
         self.model.set_rhs('v', v_dot)
@@ -89,16 +95,17 @@ class MyUSVModel():
 
 
 
-        f_1 = r*v*Iy/Ix - u*Dx/Ix + tu
-        #f_1 = v*Iy/Ix - u*Dx/Ix + tu
-        f_2 = -u*Ix/Iy - v*Dy/Iy + tv
-        f_3 = -r*Dz/Iz + v*u*(Iy-Ix)/Iz + tr
-        #f_3 = -r*Dz/Iz + u*(Iy-Ix)/Iz + tr
+        f_1 = tu + r*v*Iy/Ix - u*Dx/Ix
+        f_2 = tv - u*Ix/Iy - v*Dy/Iy
+        f_3 = tr - r*Dz/Iz + v*u*(Iy-Ix)/Iz
+
+        #f_1 = tu + r - u
+        #f_2 = tv - u - v
+        #f_3 = tr - r + v
         
-        
-        self.model.set_alg('u_dot',f_1)
-        self.model.set_alg('v_dot',f_2)
-        self.model.set_alg('r_dot',f_3)
+        dynamics = vertcat(f_1,f_2,f_3)
+
+        self.model.set_alg('dynamics', dynamics)
 
         self.model.setup()
 

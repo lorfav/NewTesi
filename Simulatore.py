@@ -13,12 +13,12 @@ from ControlloreUSV import *
 auv = MyAUVModel()
 usv = MyUSVModel()
 
-x0 = 0
-y0 = 0
+x0 = 10
+y0 = 10
 z0 = 10
 
 def line(t):# [ 0.00000000e+00  0.00000000e+00  5.33333333e-03 -3.55555556e-05] 0.25
-    x = x0 + 2/3*0.01*t
+    x = x0 + 2/3*(0.01*t)**2
     y = y0 - 0.01*t
     z = z0 + 0.01*t
     return x,y,z
